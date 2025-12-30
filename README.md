@@ -164,6 +164,204 @@ rm backend/src/db/app.db
 ```
 The database will be recreated automatically when the backend restarts.
 
+## Database Setup
+
+This project uses **SQLite** with **Better-SQLite3** for simplicity and zero-configuration setup.
+
+### Schema Auto-Migration
+
+The database schema is automatically applied when the backend starts. No manual migration steps required!
+
+The schema file is located at `backend/src/db/schema.sql`:
+
+```sql
+CREATE TABLE IF NOT EXISTS conversations (
+    id TEXT PRIMARY KEY,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL,
+    sender TEXT NOT NULL,
+    text TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id)
+);
+```
+
+### Seeding
+
+No seed data is required. The database starts empty and conversations are created dynamically when users start chatting.
+
+---
+
+## Architecture Overview
+
+### Backend Structure
+
+The backend follows a **layered architecture** pattern for clean separation of concerns:
+
+```
+backend/src/
+├── index.ts              # Entry point - Express app setup, middleware, server
+├── routes/
+│   └── chat.ts           # API Layer - Route handlers, request validation
+├── services/
+│   ├── chat_service.ts   # Business Logic Layer - Orchestrates chat flow
+│   └── llm_service.ts    # Integration Layer - LLM provider abstraction
+└── db/
+    ├── db.ts             # Data Layer - Database connection & initialization
+    ├── messages.ts       # Data Layer - Message repository (CRUD operations)
+    └── schema.sql        # Database schema definition
+```
+
+### Layer Responsibilities
+
+| Layer | Files | Responsibility |
+|-------|-------|----------------|
+| **Routes** | `chat.ts` | HTTP handling, request validation, response formatting |
+| **Services** | `chat_service.ts` | Business logic, orchestration between DB and LLM |
+| **Integration** | `llm_service.ts` | External API calls, prompt engineering, error handling |
+| **Data** | `db.ts`, `messages.ts` | Database operations, data persistence |
+
+### Design Decisions
+
+1. **SQLite over PostgreSQL/MySQL**: Chose SQLite for zero-config setup and portability. The database file is created automatically - no Docker or external services needed.
+
+2. **Session-based conversations**: Each conversation has a unique UUID stored in localStorage. This enables:
+   - Chat persistence across page reloads
+   - Conversation history for LLM context
+   - Easy "New Chat" functionality
+
+3. **Synchronous Better-SQLite3**: Used synchronous API for simplicity. SQLite operations are fast enough that async overhead isn't justified for this use case.
+
+4. **ES Modules**: The backend uses ES modules (`"type": "module"`) for modern JavaScript compatibility and better tree-shaking.
+
+---
+
+## LLM Integration
+
+### Provider: Google Gemini
+
+This project uses **Google Gemini 2.0 Flash** via the `@google/generative-ai` SDK.
+
+**Why Gemini?**
+- Generous free tier (ideal for development)
+- Fast response times
+- Good instruction-following capabilities
+- Simple SDK integration
+
+### Prompting Strategy
+
+The LLM is prompted with a **system prompt** that defines its role and constraints:
+
+```typescript
+const SYSTEM_PROMPT = `
+You are a helpful and polite customer support agent for a small e-commerce store.
+Answer clearly, concisely, and professionally.
+
+Store Policies:
+- Shipping: We ship worldwide. Delivery takes 5–7 business days.
+- Returns: Items can be returned within 30 days for a full refund.
+- Support Hours: Monday to Friday, 9 AM to 6 PM IST.
+
+IMPORTANT: You must ONLY answer questions related to our store, products, orders, 
+shipping, returns, and store policies. 
+
+If a user asks anything unrelated to the e-commerce store, politely redirect them.
+`;
+```
+
+### Conversation Context
+
+The LLM receives the **last 10 messages** from the conversation history, enabling:
+- Context-aware responses
+- Follow-up question handling
+- Consistent conversation flow
+
+### Using Different LLM Providers
+
+To switch to **OpenAI** or **Anthropic**, modify `backend/src/services/llm_service.ts`:
+
+**OpenAI Example:**
+```typescript
+import OpenAI from 'openai';
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+export async function generateReply(history, userMessage) {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...history.map(msg => ({
+        role: msg.sender === "user" ? "user" : "assistant",
+        content: msg.text
+      })),
+      { role: "user", content: userMessage }
+    ]
+  });
+  return response.choices[0].message.content;
+}
+```
+
+---
+
+## Trade-offs & Limitations
+
+### Current Limitations
+
+1. **No authentication**: Any user can create conversations. Sessions are client-side only.
+
+2. **No rate limiting**: The API doesn't limit requests, making it vulnerable to abuse.
+
+3. **Single LLM provider**: Hardcoded to Gemini - no fallback if the service is down.
+
+4. **No streaming**: Responses are returned all at once, not streamed token-by-token.
+
+5. **Basic error handling**: LLM errors return a generic message without retry logic.
+
+### If I Had More Time...
+
+1. **🔐 Authentication & User Management**
+   - Add user accounts with JWT authentication
+   - Associate conversations with users
+   - Admin dashboard for viewing all conversations
+
+2. **⚡ Response Streaming**
+   - Stream LLM responses using Server-Sent Events (SSE)
+   - Show text appearing in real-time for better UX
+
+3. **🔄 LLM Fallback & Retry**
+   - Add multiple LLM providers (OpenAI as backup)
+   - Implement exponential backoff retry logic
+   - Circuit breaker pattern for resilience
+
+4. **📊 Analytics & Monitoring**
+   - Track common questions and topics
+   - Measure response quality and user satisfaction
+   - Dashboard for conversation analytics
+
+5. **🎨 Enhanced UI**
+   - Markdown rendering in chat messages
+   - File/image upload support
+   - Typing indicators with actual LLM status
+   - Dark/light theme toggle
+
+6. **🧪 Testing**
+   - Unit tests for services
+   - Integration tests for API endpoints
+   - E2E tests with Playwright
+
+7. **🚀 Production Ready**
+   - Docker containerization
+   - CI/CD pipeline
+   - Rate limiting and API key management
+   - PostgreSQL for production database
+
+---
+
 ## Scripts
 
 ### Frontend
