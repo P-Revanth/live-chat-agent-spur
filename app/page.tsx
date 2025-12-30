@@ -27,7 +27,7 @@ export default function Home() {
     if (storedSessionId) {
       setSessionId(storedSessionId);
       // Fetch conversation history
-      fetch(`http://localhost:4000/chat/history/${storedSessionId}`)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat/history/${storedSessionId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.messages && data.messages.length > 0) {
@@ -52,7 +52,7 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:4000/chat/message", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMessage, sessionId }),
