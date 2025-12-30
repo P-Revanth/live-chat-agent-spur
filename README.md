@@ -1,36 +1,182 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Noah - E-Commerce Live Chat Agent 🤖
+
+An AI-powered customer support chatbot for e-commerce stores, built with Next.js and Express.
+
+![Noah Chat Interface](public/preview.png)
+
+## Features
+
+- 💬 Real-time chat interface with AI-powered responses
+- 🛒 Specialized for e-commerce customer support (shipping, returns, store policies)
+- 💾 Persistent chat sessions across page reloads
+- 🎨 Modern, responsive UI with Tailwind CSS
+- 🔄 Conversation history stored in SQLite database
+
+## Tech Stack
+
+### Frontend
+- **Next.js 16** - React framework
+- **React 19** - UI library
+- **Tailwind CSS 4** - Styling
+- **TypeScript** - Type safety
+
+### Backend
+- **Express 5** - Node.js web framework
+- **Better-SQLite3** - SQLite database
+- **Google Generative AI (Gemini)** - AI responses
+- **TypeScript** - Type safety
+
+## Prerequisites
+
+- **Node.js** v20.6+ (required for `--env-file` flag)
+- **npm** or **yarn**
+- **Google Gemini API Key** - Get one from [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+## Project Structure
+
+```
+live-chat-agent/
+├── app/                    # Next.js frontend
+│   ├── page.tsx           # Main chat interface
+│   ├── layout.tsx         # Root layout
+│   └── globals.css        # Global styles
+├── backend/               # Express backend
+│   └── src/
+│       ├── index.ts       # Server entry point
+│       ├── routes/
+│       │   └── chat.ts    # Chat API routes
+│       ├── services/
+│       │   ├── chat_service.ts  # Chat logic
+│       │   └── llm_service.ts   # AI integration
+│       └── db/
+│           ├── db.ts      # Database connection
+│           ├── messages.ts # Message queries
+│           └── schema.sql # Database schema
+├── public/                # Static assets
+└── README.md
+```
 
 ## Getting Started
 
-First, run the development server:
+### 1. Clone the Repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd live-chat-agent
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Setup Backend
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Navigate to backend directory
+cd backend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Install dependencies
+npm install
 
-## Learn More
+# Create environment file
+cp .env.example .env
+# Or create manually:
+echo "GEMINI_API_KEY=your_api_key_here" > .env
+echo "DATABASE_URL=file:./src/db/app.db" >> .env
 
-To learn more about Next.js, take a look at the following resources:
+# Start the backend server
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The backend will run on `http://localhost:4000`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. Setup Frontend
 
-## Deploy on Vercel
+```bash
+# Navigate back to root directory (from backend)
+cd ..
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Install dependencies
+npm install
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Start the frontend development server
+npm run dev
+```
+
+The frontend will run on `http://localhost:3000`
+
+### 4. Open the App
+
+Visit [http://localhost:3000](http://localhost:3000) in your browser to start chatting with Noah!
+
+## Environment Variables
+
+### Backend (`backend/.env`)
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GEMINI_API_KEY` | Your Google Gemini API key | Yes |
+| `PORT` | Server port (default: 4000) | No |
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/chat/message` | Send a message and get AI response |
+| `GET` | `/chat/history/:sessionId` | Get conversation history |
+
+### POST /chat/message
+
+**Request Body:**
+```json
+{
+  "message": "What is your return policy?",
+  "sessionId": "optional-session-id"
+}
+```
+
+**Response:**
+```json
+{
+  "reply": "Items can be returned within 30 days for a full refund...",
+  "sessionId": "uuid-session-id"
+}
+```
+
+## Development
+
+### Running Both Servers
+
+You'll need two terminal windows:
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
+npm run dev
+```
+
+**Terminal 2 - Frontend:**
+```bash
+npm run dev
+```
+
+### Resetting the Database
+
+To clear all chat history:
+```bash
+rm backend/src/db/app.db
+```
+The database will be recreated automatically when the backend restarts.
+
+## Scripts
+
+### Frontend
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+### Backend
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Compile TypeScript
+- `npm run start` - Start production server
+
+## License
+
+ISC

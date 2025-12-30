@@ -85,6 +85,12 @@ export default function Home() {
     }
   };
 
+  const startNewChat = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setSessionId(null);
+    setMessages([]);
+  };
+
   return (
     <div className="flex h-screen bg-linear-to-br from-[white] to-[#C0D0FD]">
       {/* Left Sidebar */}
@@ -107,6 +113,17 @@ export default function Home() {
               </p>
             </div>
           </div>
+
+          {/* New Chat Button */}
+          <button
+            onClick={startNewChat}
+            className="mt-6 w-full flex items-center justify-center gap-2 bg-black text-white px-4 py-3 rounded-xl hover:bg-slate-800 transition-all cursor-pointer"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <span className="font-medium">New Chat</span>
+          </button>
         </div>
 
         {/* Robot Character */}
